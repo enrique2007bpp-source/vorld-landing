@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VÖRLD — Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --accent: #d4ff5e;
+      --accent2: #ff5e5e;
+      --text: #f0ede6;
+      --muted: #5a5a52;
+      --border: rgba(240,237,230,0.08);
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── CANVAS ── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── CURSOR ── */
+    #cursor {
+      position: fixed;
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width .2s, height .2s, background .2s;
+      mix-blend-mode: difference;
+    }
+    #cursor.big {
+      width: 48px; height: 48px;
+      background: var(--accent);
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 4rem;
+      border-bottom: 1px solid transparent;
+      transition: border-color .4s, backdrop-filter .4s, background .4s;
+    }
+    nav.scrolled {
+      border-color: var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(10,10,10,0.7);
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: .1em;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--accent);
+      border: none;
+      padding: .6rem 1.4rem;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .nav-cta:hover { background: #fff; transform: scale(1.03); }
+
+    /* ── SECTIONS WRAPPER ── */
+    main { position: relative; z-index: 1; }
+
+    /* ── HERO ── */
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 4rem 6rem;
+      position: relative;
+    }
+
+    .hero-tag {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(5rem, 13vw, 14rem);
+      line-height: .9;
+      letter-spacing: -.01em;
+      color: var(--text);
+      overflow: hidden;
+    }
+    .hero-title .line { display: block; transform: translateY(110%); }
+    .hero-title .accent { color: var(--accent); }
+    .hero-title .stroke {
+      -webkit-text-stroke: 1px var(--text);
+      color: transparent;
+    }
+
+    .hero-sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 3rem;
+      gap: 2rem;
+    }
+    .hero-desc {
+      max-width: 380px;
+      font-size: 1rem;
+      color: var(--muted);
+      font-weight: 300;
+      opacity: 0;
+    }
+    .hero-scroll {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      opacity: 0;
+    }
+    .hero-scroll::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 1px;
+      background: var(--muted);
+      animation: scrollLine 2s ease-in-out infinite;
+    }
+    @keyframes scrollLine {
+      0%, 100% { transform: scaleX(1); opacity: .5; }
+      50% { transform: scaleX(1.5); opacity: 1; }
+    }
+
+    /* ── MARQUEE ── */
+    .marquee-section {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 1.2rem 0;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .marquee-track {
+      display: flex;
+      gap: 0;
+      width: max-content;
+      animation: marquee 20s linear infinite;
+    }
+    .marquee-item {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      letter-spacing: .15em;
+      padding: 0 3rem;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+    .marquee-item .dot {
+      color: var(--accent);
+      margin-right: 3rem;
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+
+    /* ── SERVICES ── */
+    #services {
+      padding: 8rem 4rem;
+    }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 2rem;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .services-header {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 6vw, 6rem);
+      line-height: 1;
+      margin-bottom: 5rem;
+      max-width: 700px;
+    }
+    .services-header em {
+      font-style: italic;
+      font-family: var(--font-body);
+      font-weight: 300;
+      color: var(--muted);
+    }
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+    }
+    .service-card {
+      background: var(--bg);
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: background .3s;
+    }
+    .service-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0%; height: 2px;
+      background: var(--accent);
+      transition: width .4s ease;
+    }
+    .service-card:hover { background: var(--surface); }
+    .service-card:hover::after { width: 100%; }
+
+    .service-num {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .15em;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+    .service-icon {
+      width: 48px; height: 48px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      font-size: 1.4rem;
+    }
+    .service-title {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: .05em;
+      margin-bottom: 1rem;
+    }
+    .service-desc {
+      font-size: .9rem;
+      color: var(--muted);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* ── ABOUT / SPLIT ── */
+    #about {
+      padding: 8rem 4rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8rem;
+      align-items: center;
+    }
+
+    .about-visual {
+      position: relative;
+      aspect-ratio: 4/5;
+    }
+    .about-frame {
+      position: absolute;
+      inset: 0;
+      border: 1px solid var(--border);
+    }
+    .about-frame::before {
+      content: '';
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(212,255,94,0.15);
+    }
+    #about-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .about-badge {
+      position: absolute;
+      bottom: 2rem;
+      right: -2rem;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      letter-spacing: .1em;
+      padding: 1rem 1.5rem;
+      z-index: 2;
+    }
+
+    .about-content .section-label { margin-bottom: 2rem; }
+    .about-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 4vw, 4.5rem);
+      line-height: 1;
+      margin-bottom: 2rem;
+    }
+    .about-body {
+      font-size: .95rem;
+      color: var(--muted);
+      font-weight: 300;
+      margin-bottom: 2.5rem;
+      line-height: 1.8;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 3rem;
+      margin-top: 3rem;
+    }
+    .stat-item {}
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat-label {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: .4rem;
+    }
+
+    /* ── WORK / PROJECTS ── */
+    #work {
+      padding: 8rem 4rem;
+    }
+    .work-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 4rem;
+    }
+    .work-title {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 5vw, 5rem);
+      line-height: 1;
+    }
+    .view-all {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      transition: color .2s;
+    }
+    .view-all::after { content: '→'; }
+    .view-all:hover { color: var(--accent); }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      background: var(--border);
+    }
+    .project-card {
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      cursor: pointer;
+    }
+    .project-card:first-child {
+      grid-column: span 2;
+      aspect-ratio: 16/7;
+    }
+    .project-canvas {
+      width: 100%; height: 100%;
+      display: block;
+      transition: transform .6s ease;
+    }
+    .project-card:hover .project-canvas { transform: scale(1.04); }
+    .project-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10,10,10,.9) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity .4s;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 2rem;
+    }
+    .project-card:hover .project-overlay { opacity: 1; }
+    .project-tag {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: .5rem;
+    }
+    .project-name {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      letter-spacing: .05em;
+    }
+
+    /* ── CONTACT ── */
+    #contact {
+      padding: 8rem 4rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    .contact-eyebrow {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 2rem;
+    }
+    .contact-title {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 10vw, 11rem);
+      line-height: .9;
+      margin-bottom: 3rem;
+      background: linear-gradient(135deg, var(--text) 40%, var(--muted) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .contact-email {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      letter-spacing: .1em;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: .2rem;
+      transition: color .2s;
+    }
+    .contact-email:hover { color: var(--text); }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2rem 4rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-copy {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--text); }
+
+    /* ── REVEAL ── */
+    .reveal { opacity: 0; transform: translateY(40px); }
+  </style>
+</head>
+
+<body>
+
+<div id="cursor"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a class="nav-logo" href="#">VÖR<span>LD</span></a>
+  <ul class="nav-links">
+    <li><a href="#services">Servicios</a></li>
+    <li><a href="#about">Estudio</a></li>
+    <li><a href="#work">Proyectos</a></li>
+    <li><a href="#contact">Contacto</a></li>
+  </ul>
+  <button class="nav-cta">Hablemos</button>
+</nav>
+
+<main>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-tag">Studio digital — Fundado 2019</div>
+    <h1 class="hero-title">
+      <span class="line">DISEÑO</span>
+      <span class="line"><span class="stroke">QUE</span> <span class="accent">MUEVE</span></span>
+      <span class="line">AL MUNDO</span>
+    </h1>
+    <div class="hero-sub">
+      <p class="hero-desc">
+        Creamos experiencias digitales extraordinarias donde la tecnología y el arte convergen para transformar marcas.
+      </p>
+      <span class="hero-scroll">Scroll para explorar</span>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-section">
+    <div class="marquee-track" id="marqueeTrack">
+      <span class="marquee-item">Diseño Web <span class="dot">◆</span></span>
+      <span class="marquee-item">Identidad Visual <span class="dot">◆</span></span>
+      <span class="marquee-item">Motion Graphics <span class="dot">◆</span></span>
+      <span class="marquee-item">Desarrollo Front-end <span class="dot">◆</span></span>
+      <span class="marquee-item">UX/UI <span class="dot">◆</span></span>
+      <span class="marquee-item">3D & WebGL <span class="dot">◆</span></span>
+      <span class="marquee-item">Estrategia Digital <span class="dot">◆</span></span>
+      <span class="marquee-item">Diseño Web <span class="dot">◆</span></span>
+      <span class="marquee-item">Identidad Visual <span class="dot">◆</span></span>
+      <span class="marquee-item">Motion Graphics <span class="dot">◆</span></span>
+      <span class="marquee-item">Desarrollo Front-end <span class="dot">◆</span></span>
+      <span class="marquee-item">UX/UI <span class="dot">◆</span></span>
+      <span class="marquee-item">3D & WebGL <span class="dot">◆</span></span>
+      <span class="marquee-item">Estrategia Digital <span class="dot">◆</span></span>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <section id="services">
+    <div class="section-label">Nuestros servicios</div>
+    <h2 class="services-header reveal">
+      Lo que hacemos <em>mejor</em> que nadie
+    </h2>
+    <div class="services-grid">
+      <div class="service-card reveal">
+        <div class="service-num">01</div>
+        <div class="service-icon">⬡</div>
+        <div class="service-title">Branding</div>
+        <p class="service-desc">Construimos identidades visuales poderosas que resuenan y perduran en la memoria colectiva de tus usuarios.</p>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-num">02</div>
+        <div class="service-icon">◈</div>
+        <div class="service-title">Web & App</div>
+        <p class="service-desc">Interfaces digitales de alto rendimiento, con microinteracciones cuidadas y arquitecturas escalables.</p>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-num">03</div>
+        <div class="service-icon">⬟</div>
+        <div class="service-title">Motion & 3D</div>
+        <p class="service-desc">Animaciones y experiencias tridimensionales que convierten visitantes en audiencias comprometidas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="about-visual">
+      <div class="about-frame"></div>
+      <canvas id="about-canvas"></canvas>
+      <div class="about-badge">Est. 2019</div>
+    </div>
+    <div class="about-content">
+      <div class="section-label">Sobre el estudio</div>
+      <h2 class="about-title reveal">
+        Somos creadores<br/>obsesivos con<br/>el detalle
+      </h2>
+      <p class="about-body reveal">
+        VÖRLD nació de la convicción de que el diseño digital puede ser tan evocador como el arte. Combinamos rigor técnico y sensibilidad estética para dar vida a proyectos que dejan huella.
+      </p>
+      <p class="about-body reveal">
+        Trabajamos con startups ambiciosas, marcas consolidadas y proyectos culturales que buscan superar las expectativas de lo posible.
+      </p>
+      <div class="stats-row">
+        <div class="stat-item reveal">
+          <div class="stat-num" data-count="148">0</div>
+          <div class="stat-label">Proyectos</div>
+        </div>
+        <div class="stat-item reveal">
+          <div class="stat-num" data-count="94">0</div>
+          <div class="stat-label">Clientes</div>
+        </div>
+        <div class="stat-item reveal">
+          <div class="stat-num" data-count="12">0</div>
+          <div class="stat-label">Awards</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORK -->
+  <section id="work">
+    <div class="work-header-row">
+      <div class="section-label">Proyectos seleccionados</div>
+      <a href="#" class="view-all">Ver todos</a>
+    </div>
+    <h2 class="work-title reveal">Trabajo</h2>
+    <div class="projects-grid" style="margin-top:2rem;">
+      <div class="project-card reveal">
+        <canvas class="project-canvas" data-project="0"></canvas>
+        <div class="project-overlay">
+          <div class="project-tag">Branding / Web</div>
+          <div class="project-name">Arkana Studio</div>
+        </div>
+      </div>
+      <div class="project-card reveal">
+        <canvas class="project-canvas" data-project="1"></canvas>
+        <div class="project-overlay">
+          <div class="project-tag">Motion / 3D</div>
+          <div class="project-name">Flux Systems</div>
+        </div>
+      </div>
+      <div class="project-card reveal">
+        <canvas class="project-canvas" data-project="2"></canvas>
+        <div class="project-overlay">
+          <div class="project-tag">UI/UX</div>
+          <div class="project-name">Solara App</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="contact-eyebrow">¿Tienes un proyecto?</div>
+    <h2 class="contact-title">HABLEMOS</h2>
+    <a href="mailto:hola@vorld.studio" class="contact-email">hola@vorld.studio</a>
+  </section>
+
+</main>
+
+<footer>
+  <span class="footer-copy">© 2025 VÖRLD Studio — Todos los derechos reservados</span>
+  <ul class="footer-links">
+    <li><a href="#">Twitter</a></li>
+    <li><a href="#">Behance</a></li>
+    <li><a href="#">LinkedIn</a></li>
+    <li><a href="#">GitHub</a></li>
+  </ul>
+</footer>
+
+<!-- THREE.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+<script>
+/* ─────────────────────────────────────────────
+   1. CURSOR
+───────────────────────────────────────────── */
+const cursor = document.getElementById('cursor');
+let mx = 0, my = 0;
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top  = my + 'px';
+});
+document.querySelectorAll('a, button, .service-card, .project-card').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('big'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
+});
+
+/* ─────────────────────────────────────────────
+   2. BACKGROUND THREE.JS — Particle Field
+───────────────────────────────────────────── */
+(function bgScene() {
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setSize(innerWidth, innerHeight);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 200);
+  camera.position.z = 60;
+
+  const N = 2200;
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(N * 3);
+  const vel = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - .5) * 160;
+    pos[i*3+1] = (Math.random() - .5) * 100;
+    pos[i*3+2] = (Math.random() - .5) * 120;
+    vel[i*3]   = (Math.random() - .5) * .008;
+    vel[i*3+1] = (Math.random() - .5) * .006;
+    vel[i*3+2] = (Math.random() - .5) * .004;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ color: 0x333328, size: .3, transparent: true, opacity: .8 });
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+
+  // Connection lines
+  const lineGeo = new THREE.BufferGeometry();
+  const linePosArr = new Float32Array(6000 * 6);
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePosArr, 3));
+  const lineMat = new THREE.LineSegments(
+    lineGeo,
+    new THREE.LineBasicMaterial({ color: 0x222220, transparent: true, opacity: .3 })
+  );
+  scene.add(lineMat);
+
+  let mouseNX = 0, mouseNY = 0;
+  window.addEventListener('mousemove', e => {
+    mouseNX = (e.clientX / innerWidth  - .5) * .3;
+    mouseNY = (e.clientY / innerHeight - .5) * .3;
+  });
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += .004;
+    const posArr = geo.attributes.position.array;
+
+    for (let i = 0; i < N; i++) {
+      posArr[i*3]   += vel[i*3];
+      posArr[i*3+1] += vel[i*3+1];
+      posArr[i*3+2] += vel[i*3+2];
+      if (posArr[i*3] >  80) posArr[i*3] = -80;
+      if (posArr[i*3] < -80) posArr[i*3] =  80;
+      if (posArr[i*3+1] >  50) posArr[i*3+1] = -50;
+      if (posArr[i*3+1] < -50) posArr[i*3+1] =  50;
+    }
+    geo.attributes.position.needsUpdate = true;
+
+    // Update some line pairs (cheap approach: only check first 300 particles)
+    let li = 0;
+    const lap = linePosArr;
+    const THRESH = 18, THRESH2 = THRESH * THRESH;
+    for (let i = 0; i < 300 && li < 5998; i++) {
+      for (let j = i+1; j < 300 && li < 5998; j++) {
+        const dx = posArr[i*3]-posArr[j*3];
+        const dy = posArr[i*3+1]-posArr[j*3+1];
+        const dz = posArr[i*3+2]-posArr[j*3+2];
+        if (dx*dx+dy*dy+dz*dz < THRESH2) {
+          lap[li++]=posArr[i*3]; lap[li++]=posArr[i*3+1]; lap[li++]=posArr[i*3+2];
+          lap[li++]=posArr[j*3]; lap[li++]=posArr[j*3+1]; lap[li++]=posArr[j*3+2];
+        }
+      }
+    }
+    lineGeo.attributes.position.needsUpdate = true;
+    lineGeo.setDrawRange(0, li/3);
+
+    camera.position.x += (mouseNX * 8 - camera.position.x) * .015;
+    camera.position.y += (-mouseNY * 5 - camera.position.y) * .015;
+    camera.lookAt(0, 0, 0);
+    points.rotation.y = t * .05;
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+})();
+
+/* ─────────────────────────────────────────────
+   3. ABOUT CANVAS — Rotating Torus/Sphere Three.js
+───────────────────────────────────────────── */
+(function aboutScene() {
+  const canvas = document.getElementById('about-canvas');
+  const W = canvas.parentElement.offsetWidth;
+  const H = canvas.parentElement.offsetHeight || 500;
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, W/H, 0.1, 100);
+  camera.position.set(0, 0, 6);
+
+  // Torus knot
+  const geo = new THREE.TorusKnotGeometry(1.6, .45, 180, 20, 2, 3);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    wireframe: false,
+    metalness: .9,
+    roughness: .2,
+    emissive: 0x0a0a00
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+
+  // Wireframe overlay
+  const wfMat = new THREE.MeshBasicMaterial({ color: 0xd4ff5e, wireframe: true, transparent: true, opacity: .08 });
+  const wfMesh = new THREE.Mesh(geo, wfMat);
+  scene.add(wfMesh);
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0xffffff, .3);
+  scene.add(ambient);
+  const dirLight = new THREE.DirectionalLight(0xd4ff5e, 2);
+  dirLight.position.set(3, 5, 5);
+  scene.add(dirLight);
+  const pinkLight = new THREE.PointLight(0xff5e5e, 1.5, 12);
+  pinkLight.position.set(-4, -3, 2);
+  scene.add(pinkLight);
+
+  let t = 0;
+  function tick() {
+    requestAnimationFrame(tick);
+    t += .005;
+    mesh.rotation.x = t * .4;
+    mesh.rotation.y = t * .6;
+    wfMesh.rotation.x = t * .4;
+    wfMesh.rotation.y = t * .6;
+    dirLight.position.x = Math.sin(t) * 5;
+    dirLight.position.y = Math.cos(t) * 4;
+    renderer.render(scene, camera);
+  }
+  tick();
+})();
+
+/* ─────────────────────────────────────────────
+   4. PROJECT CANVASES — Abstract procedural art
+───────────────────────────────────────────── */
+const projects = [
+  { bg: '#0d0d0d', accent: '#d4ff5e', type: 'grid' },
+  { bg: '#0d0d0d', accent: '#ff5e5e', type: 'wave' },
+  { bg: '#0d0d0d', accent: '#5e9dff', type: 'dots' },
+];
+document.querySelectorAll('.project-canvas').forEach((c, idx) => {
+  const conf = projects[idx];
+  const W = c.parentElement.offsetWidth  || 800;
+  const H = c.parentElement.offsetHeight || 400;
+  c.width  = W;
+  c.height = H;
+  const ctx = c.getContext('2d');
+
+  function drawGrid(t) {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = conf.bg;
+    ctx.fillRect(0,0,W,H);
+    const size = 40;
+    ctx.strokeStyle = 'rgba(212,255,94,0.07)';
+    ctx.lineWidth = .5;
+    for (let x = 0; x < W; x += size) {
+      for (let y = 0; y < H; y += size) {
+        const d = Math.hypot(x-W*.5, y-H*.5);
+        const pulse = Math.sin(d*.03 - t) * .5 + .5;
+        ctx.globalAlpha = pulse * .5;
+        ctx.strokeRect(x, y, size, size);
+      }
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.arc(W*.5, H*.5, 60 + Math.sin(t*2)*10, 0, Math.PI*2);
+    ctx.strokeStyle = conf.accent;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawWave(t) {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = conf.bg;
+    ctx.fillRect(0,0,W,H);
+    for (let k = 0; k < 5; k++) {
+      ctx.beginPath();
+      for (let x = 0; x < W; x++) {
+        const y = H*.5
+          + Math.sin(x*.012 + t + k*.6) * (30 + k*12)
+          + Math.sin(x*.025 - t*.7 + k) * 15;
+        k===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = conf.accent;
+      ctx.lineWidth = k===0 ? 2 : .6;
+      ctx.globalAlpha = k===0 ? .8 : .15;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawDots(t) {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = conf.bg;
+    ctx.fillRect(0,0,W,H);
+    const cols = 20, rows = 12;
+    const gx = W/cols, gy = H/rows;
+    for (let r = 0; r < rows; r++) {
+      for (let co = 0; co < cols; co++) {
+        const x = gx*.5 + co*gx;
+        const y = gy*.5 + r*gy;
+        const d = Math.hypot(co-cols*.5, r-rows*.5);
+        const size = 2 + Math.sin(d*.5 - t * 1.5) * 2;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(.1, size), 0, Math.PI*2);
+        ctx.fillStyle = conf.accent;
+        ctx.globalAlpha = .2 + Math.sin(d*.3-t)*.15;
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  const draws = [drawGrid, drawWave, drawDots];
+  let t = 0;
+  function loop() {
+    requestAnimationFrame(loop);
+    t += .02;
+    draws[idx](t);
+  }
+  loop();
+});
+
+/* ─────────────────────────────────────────────
+   5. GSAP ANIMATIONS
+───────────────────────────────────────────── */
+gsap.registerPlugin(ScrollTrigger);
+
+// Hero entrance
+gsap.to('.hero-tag', { opacity: 1, duration: 1, delay: .5 });
+gsap.to('.hero-title .line', {
+  y: 0,
+  duration: 1.1,
+  ease: 'expo.out',
+  stagger: .12,
+  delay: .8
+});
+gsap.to('.hero-desc',   { opacity: 1, duration: 1, delay: 1.6 });
+gsap.to('.hero-scroll', { opacity: 1, duration: 1, delay: 2 });
+
+// Navbar on scroll
+ScrollTrigger.create({
+  start: 'top -80',
+  onUpdate: self => {
+    document.getElementById('navbar').classList.toggle('scrolled', self.progress > 0);
+  }
+});
+
+// Generic reveal
+gsap.utils.toArray('.reveal').forEach(el => {
+  gsap.to(el, {
+    opacity: 1,
+    y: 0,
+    duration: .9,
+    ease: 'power3.out',
+    scrollTrigger: {
+      trigger: el,
+      start: 'top 85%',
+      toggleActions: 'play none none none'
+    }
+  });
+});
+
+// Counter animation
+gsap.utils.toArray('[data-count]').forEach(el => {
+  const target = parseInt(el.dataset.count);
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top 80%',
+    once: true,
+    onEnter: () => {
+      gsap.to({ val: 0 }, {
+        val: target,
+        duration: 1.8,
+        ease: 'power2.out',
+        onUpdate: function() { el.textContent = Math.floor(this.targets()[0].val); }
+      });
+    }
+  });
+});
+
+// Parallax hero title
+gsap.to('.hero-title', {
+  y: -120,
+  ease: 'none',
+  scrollTrigger: { trigger: '#hero', start: 'top top', end: 'bottom top', scrub: 1 }
+});
+
+// Services stagger
+gsap.utils.toArray('.service-card').forEach((card, i) => {
+  gsap.fromTo(card, { y: 60, opacity: 0 }, {
+    y: 0, opacity: 1, duration: .8, delay: i * .12,
+    ease: 'power2.out',
+    scrollTrigger: { trigger: card, start: 'top 88%', toggleActions: 'play none none none' }
+  });
+});
+
+/* ─────────────────────────────────────────────
+   6. SMOOTH ANCHOR SCROLLING
+───────────────────────────────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (!target) return;
+    e.preventDefault();
+    gsap.to(window, {
+      scrollTo: { y: target, offsetY: 70 },
+      duration: 1.4,
+      ease: 'power3.inOut'
+    });
+  });
+});
+</script>
+</body>
+</html>
